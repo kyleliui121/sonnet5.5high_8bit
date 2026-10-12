@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>星彩沙盘格斗 · Starlight Sandbox Brawl</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  html,body{margin:0;height:100%;background:#0b0d1f;overflow:hidden;font-family:"Lucida Console","Courier New","Microsoft YaHei",monospace;font-weight:bold;color:#fff;user-select:none}
+  #stage{position:absolute;left:50%;top:50%;width:960px;height:540px;transform-origin:0 0;background:#000}
+  canvas{position:absolute;left:0;top:0;width:960px;height:540px;image-rendering:pixelated;image-rendering:crisp-edges}
+  #hud{position:absolute;inset:0;pointer-events:none}
+  .txt{text-shadow:2px 0 #000,-2px 0 #000,0 2px #000,0 -2px #000,2px 2px #000,-2px -2px #000,2px -2px #000,-2px 2px #000}
+  .bar{position:absolute;top:14px;width:360px}
+  .bar.p1{left:18px}.bar.p2{right:18px;text-align:right}
+  .bar .name{font-size:18px;letter-spacing:1px}
+  .bar .name small{font-size:12px;opacity:.85;margin:0 6px}
+  .hp{position:relative;height:22px;margin-top:3px;background:#1a1530;border:3px solid #000;box-shadow:0 0 0 3px #fff,4px 4px 0 3px rgba(0,0,0,.5)}
+  .hp .ghost{position:absolute;left:0;top:0;bottom:0;background:#ffe45a;width:100%}
+  .hp .fill{position:absolute;left:0;top:0;bottom:0;width:100%}
+  .p2 .hp .ghost,.p2 .hp .fill{left:auto;right:0}
+  .hp .seg{position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 17px,rgba(0,0,0,.45) 17px 19px)}
+  .pips{margin-top:8px;height:16px}
+  .pip{display:inline-block;width:14px;height:14px;margin:0 5px;background:#2a2447;border:2px solid #000;box-shadow:0 0 0 2px #fff;transform:rotate(45deg)}
+  .pip.on{background:#ffe45a}
+  #timer{position:absolute;left:50%;top:10px;transform:translateX(-50%);font-size:40px;width:80px;text-align:center}
+  #round{position:absolute;left:50%;top:56px;transform:translateX(-50%);font-size:13px;opacity:.9;white-space:nowrap}
+  #skills{position:absolute;left:18px;bottom:16px;display:flex;gap:12px}
+  .sk{position:relative;width:72px;height:72px;background:#171336;border:3px solid #000;box-shadow:0 0 0 3px #fff,4px 4px 0 3px rgba(0,0,0,.5);overflow:hidden;text-align:center}
+  .sk .key{position:absolute;left:3px;top:1px;font-size:16px;color:#ffe45a}
+  .sk .ico{position:absolute;left:0;right:0;top:14px;font-size:30px}
+  .sk .nm{position:absolute;left:0;right:0;bottom:2px;font-size:11px}
+  .sk .cd{position:absolute;left:0;right:0;bottom:0;background:rgba(10,8,30,.78);height:0}
+  .sk .cdt{position:absolute;left:0;right:0;top:20px;font-size:20px}
+  .sk.ready{animation:rd 1s steps(2) infinite}
+  @keyframes rd{50%{box-shadow:0 0 0 3px #ffe45a,4px 4px 0 3px rgba(0,0,0,.5)}}
+  #tips{position:absolute;right:18px;bottom:14px;font-size:12px;text-align:right;line-height:1.5;opacity:.9}
+  #banner{position:absolute;left:0;right:0;top:170px;text-align:center;font-size:84px;letter-spacing:4px;opacity:0}
+  #banner.show{animation:pop .5s steps(6) forwards}
+  #banner.sub{font-size:44px}
+  @keyframes pop{0%{opacity:0;transform:scale(2.4)}100%{opacity:1;transform:scale(1)}}
+  #floaters div{position:absolute;font-size:30px;transform:translate(-50%,-50%);animation:fl .9s steps(9) forwards}
+  @keyframes fl{0%{margin-top:0;opacity:1}100%{margin-top:-60px;opacity:0}}
+  .screen{position:absolute;inset:0;background:rgba(8,6,30,.82);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+  .screen.hide{display:none}
+  .title{font-size:58px;letter-spacing:3px;color:#ffe45a;text-shadow:4px 4px 0 #ff72d8,8px 8px 0 #000}
+  .sub2{font-size:15px;margin:6px 0 22px;opacity:.9}
+  .vs{display:flex;gap:40px;align-items:center;margin-bottom:18px}
+  .card{width:200px;padding:10px;border:3px solid #fff;background:#171336}
+  .card canvas{position:static;width:96px;height:96px}
+  .menu{font-size:16px;line-height:1.9}
+  .menu b{color:#ffe45a}
+  .blink{animation:bl 1s steps(2) infinite;font-size:22px;margin-top:14px}
+  @keyframes bl{50%{opacity:0}}
+  #flash{position:absolute;inset:0;background:#fff;opacity:0}
+  #hint{position:absolute;left:50%;bottom:104px;transform:translateX(-50%);font-size:14px;white-space:nowrap}
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="c" width="480" height="270"></canvas>
+  <div id="hud" class="txt">
+    <div class="bar p1"><div class="name" id="n1"></div><div class="hp"><div class="ghost" id="g1"></div><div class="fill" id="f1"></div><div class="seg"></div></div><div class="pips" id="pips1"></div></div>
+    <div class="bar p2"><div class="name" id="n2"></div><div class="hp"><div class="ghost" id="g2"></div><div class="fill" id="f2"></div><div class="seg"></div></div><div class="pips" id="pips2"></div></div>
+    <div id="timer">60</div><div id="round"></div>
+    <div id="skills">
+      <div class="sk" id="sk1"><span class="key">J</span><div class="ico">★</div><div class="nm">星光弹</div><div class="cd"></div><div class="cdt"></div></div>
+      <div class="sk" id="sk2"><span class="key">K</span><div class="ico">🌈</div><div class="nm">彩虹冲刺</div><div class="cd"></div><div class="cdt"></div></div>
+      <div class="sk" id="sk3"><span class="key">L</span><div class="ico">✦</div><div class="nm">星坠新星</div><div class="cd"></div><div class="cdt"></div></div>
+    </div>
+    <div id="tips">WASD 移动 · SPACE 跳跃<br>J/K/L 技能 · Q/E 转镜头<br>TAB 锁定视角 · P 暂停 · M 静音</div>
+    <div id="hint"></div>
+    <div id="banner"></div>
+    <div id="floaters"></div>
+    <div id="flash"></div>
+  </div>
+  <div id="title" class="screen txt">
+    <div class="title">STARLIGHT BRAWL</div>
+    <div class="sub2">星彩沙盘格斗 · 像素伪3D · 三局两胜</div>
+    <div class="vs">
+      <div class="card"><canvas id="cv1" width="48" height="48"></canvas><div style="color:#59c8ff">LUNA 月见</div><div style="font-size:12px">星光猫耳少年 (玩家)</div></div>
+      <div style="font-size:34px;color:#ffe45a">VS</div>
+      <div class="card"><canvas id="cv2" width="48" height="48"></canvas><div style="color:#ff8a4a">EMBER 炎狐</div><div style="font-size:12px">烈焰狐耳少女 (电脑)</div></div>
+    </div>
+    <div class="menu">难度：<span id="diffTxt"></span> <small>(按 1 / 2 / 3 切换)</small><br>
+      <b>J</b> 星光弹 · <b>K</b> 彩虹冲刺 · <b>L</b> 星坠新星（跳起可躲冲击环）</div>
+    <div class="blink">按 ENTER 开始</div>
+  </div>
+  <div id="pause" class="screen txt hide"><div class="title" style="font-size:44px">PAUSE</div><div class="blink">按 P 继续</div></div>
+  <div id="result" class="screen txt hide"><div class="title" id="resT" style="font-size:52px"></div><div class="sub2" id="resS"></div><div class="blink">ENTER 再来一局 · ESC 回标题</div></div>
+</div>
+<script>
+  function fit(){const s=Math.min(innerWidth/960,innerHeight/540),st=document.getElementById('stage');st.style.transform='scale('+s+') translate(-50%,-50%)';}
+  addEventListener('resize',fit);fit();
+</script>
+<script src="dist/game.js"></script>
+</body>
+</html>
