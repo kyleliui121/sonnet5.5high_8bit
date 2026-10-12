@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no,viewport-fit=cover">
+<title>星彩沙盘格斗 · 手机版</title>
+<link rel="icon" type="image/png" href="assets/app-icon.png">
+<link rel="apple-touch-icon" href="assets/app-icon.png">
+<style>
+  *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{height:100%;background:#070818;overflow:hidden;font-family:"Lucida Console","Courier New","Microsoft YaHei",monospace;font-weight:bold;color:#fff;user-select:none;-webkit-user-select:none;touch-action:none}
+  #mstage{position:fixed;inset:0;background:#000}
+  #c{position:absolute;inset:0;width:100%;height:100%;object-fit:contain;image-rendering:pixelated;image-rendering:crisp-edges;background:#000}
+  /* ---------- HUD ---------- */
+  #hud{position:absolute;inset:0;pointer-events:none}
+  .txt{text-shadow:2px 0 #000,-2px 0 #000,0 2px #000,0 -2px #000,2px 2px #000,-2px -2px #000,2px -2px #000,-2px 2px #000}
+  .bar{position:absolute;top:calc(6px + env(safe-area-inset-top));width:32vw;max-width:300px}
+  .bar.p1{left:calc(10px + env(safe-area-inset-left))}
+  .bar.p2{right:calc(10px + env(safe-area-inset-right));text-align:right}
+  .bar .name{font-size:clamp(11px,2.4vw,16px);letter-spacing:1px}
+  .hp{position:relative;height:14px;margin-top:2px;background:#1a1530;border:2px solid #000;box-shadow:0 0 0 2px #fff}
+  .hp .ghost{position:absolute;left:0;top:0;bottom:0;background:#ffe45a;width:100%}
+  .hp .fill{position:absolute;left:0;top:0;bottom:0;width:100%}
+  .p2 .hp .ghost,.p2 .hp .fill{left:auto;right:0}
+  .hp .seg{position:absolute;inset:0;background:repeating-linear-gradient(90deg,transparent 0 11px,rgba(0,0,0,.45) 11px 13px)}
+  .pips{margin-top:5px;height:10px}
+  .pip{display:inline-block;width:9px;height:9px;margin:0 3px;background:#2a2447;border:2px solid #000;transform:rotate(45deg)}
+  .pip.on{background:#ffe45a}
+  #timer{position:absolute;left:50%;top:calc(2px + env(safe-area-inset-top));transform:translateX(-50%);font-size:clamp(18px,4.5vw,30px);width:60px;text-align:center}
+  #round{position:absolute;left:50%;top:calc(34px + env(safe-area-inset-top));transform:translateX(-50%);font-size:clamp(9px,2vw,12px);opacity:.9;white-space:nowrap}
+  #tips{display:none}
+  /* 技能冷却迷你条（顶部中间） */
+  #skills{position:absolute;left:50%;top:calc(56px + env(safe-area-inset-top));transform:translateX(-50%);display:flex;gap:8px}
+  .sk{position:relative;width:34px;height:34px;background:#171336;border:2px solid #000;box-shadow:0 0 0 2px #fff;overflow:hidden;text-align:center;font-size:18px;line-height:30px}
+  .sk .key,.sk .nm,.sk .cdt{display:none}
+  .sk .cd{position:absolute;left:0;right:0;bottom:0;background:rgba(10,8,30,.8);height:0}
+  .sk.ready{box-shadow:0 0 0 2px #ffe45a}
+  #hint{position:absolute;left:50%;bottom:8px;transform:translateX(-50%);font-size:11px;white-space:nowrap}
+  #banner{position:absolute;left:0;right:0;top:32%;text-align:center;font-size:clamp(40px,12vw,84px);letter-spacing:4px;opacity:0}
+  #banner.show{animation:pop .5s steps(6) forwards}
+  #banner.sub{font-size:clamp(22px,6vw,44px)}
+  @keyframes pop{0%{opacity:0;transform:scale(2.4)}100%{opacity:1;transform:scale(1)}}
+  #floaters div{position:absolute;font-size:22px;transform:translate(-50%,-50%);animation:fl .9s steps(9) forwards}
+  @keyframes fl{0%{margin-top:0;opacity:1}100%{margin-top:-50px;opacity:0}}
+  #flash{position:absolute;inset:0;background:#fff;opacity:0}
+  /* ---------- 触控层 ---------- */
+  #touch{position:absolute;inset:0;pointer-events:none}
+  #joy{position:absolute;left:calc(20px + env(safe-area-inset-left));bottom:calc(20px + env(safe-area-inset-bottom));width:132px;height:132px;border-radius:50%;background:rgba(20,16,60,.45);border:3px solid rgba(255,255,255,.75);box-shadow:0 0 0 2px #000;pointer-events:auto}
+  #knob{position:absolute;left:50%;top:50%;width:56px;height:56px;margin:-28px 0 0 -28px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#9adcff,#2b6fd6 70%);border:3px solid #000;box-shadow:0 0 0 2px #fff}
+  #btns{position:absolute;right:calc(16px + env(safe-area-inset-right));bottom:calc(16px + env(safe-area-inset-bottom));display:grid;grid-template-columns:repeat(2,78px);gap:10px;pointer-events:auto}
+  .tbtn{position:relative;width:78px;height:78px;border-radius:50%;border:3px solid #000;box-shadow:0 0 0 2px #fff;font-size:32px;line-height:70px;text-align:center;color:#fff;overflow:hidden}
+  .tbtn small{position:absolute;left:0;right:0;bottom:4px;font-size:10px;line-height:1}
+  .tbtn img.ticon{width:38px;height:38px;image-rendering:pixelated;margin-top:6px}
+  .sk img{width:22px;height:22px;image-rendering:pixelated;margin-top:3px}
+  .tbtn:active,.tbtn.on{transform:scale(.92);filter:brightness(1.4)}
+  .tbtn .cdover{position:absolute;left:0;right:0;bottom:0;height:0;background:rgba(8,6,26,.75)}
+  #bJ{background:radial-gradient(circle at 35% 30%,#fff3a0,#e0a92e 70%)}
+  #bK{background:linear-gradient(135deg,#ff3b3b,#ffe83b 30%,#4cff5a 50%,#3bc8ff 70%,#c04bff)}
+  #bL{background:radial-gradient(circle at 35% 30%,#ffb0ec,#a83bd6 70%)}
+  #bJump{background:radial-gradient(circle at 35% 30%,#b0ffe0,#2ea87e 70%)}
+  #bPause{position:absolute;top:calc(66px + env(safe-area-inset-top));right:calc(10px + env(safe-area-inset-right));width:40px;height:40px;border-radius:10px;background:rgba(20,16,60,.6);border:2px solid #fff;font-size:18px;line-height:34px;text-align:center;pointer-events:auto}
+  /* ---------- 覆盖屏 ---------- */
+  .screen{position:absolute;inset:0;background:rgba(8,6,30,.86);display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:auto;padding:12px}
+  .screen.hide{display:none}
+  .title{font-size:clamp(30px,7.5vw,54px);letter-spacing:3px;color:#ffe45a;text-shadow:3px 3px 0 #ff72d8,6px 6px 0 #000}
+  .sub2{font-size:clamp(11px,2.6vw,15px);margin:4px 0 12px;opacity:.9}
+  .vs{display:flex;gap:16px;align-items:center;margin-bottom:10px}
+  .card{width:clamp(110px,24vw,170px);padding:8px;border:3px solid #fff;background:#171336;font-size:clamp(10px,2.4vw,14px)}
+  .card canvas{width:64px;height:64px;image-rendering:pixelated}
+  #diffRow{display:flex;gap:8px;margin-bottom:12px}
+  .dchip{padding:8px 14px;border:2px solid #fff;background:#171336;font-size:clamp(11px,2.6vw,14px);border-radius:8px}
+  .dchip.sel{background:#ffe45a;color:#171336}
+  #startBtn{padding:12px 46px;font-size:clamp(16px,4vw,22px);background:linear-gradient(180deg,#ff5a5a,#c22);border:3px solid #000;box-shadow:0 0 0 3px #fff,0 5px 0 #600;border-radius:12px;color:#fff;animation:bl 1.2s steps(2) infinite}
+  #startBtn:active{transform:translateY(3px)}
+  .menu{font-size:clamp(10px,2.4vw,13px);line-height:1.8;margin-top:10px}
+  .menu b{color:#ffe45a}
+  .blink{animation:bl 1s steps(2) infinite;font-size:clamp(14px,3.4vw,20px);margin-top:10px}
+  @keyframes bl{50%{opacity:0}}
+  #backBtn{margin-top:12px;padding:8px 22px;border:2px solid #fff;background:#333;border-radius:8px;font-size:14px}
+  /* 竖屏提示 */
+  #rotate{display:none;position:absolute;inset:0;background:#070818;z-index:50;flex-direction:column;align-items:center;justify-content:center;font-size:18px;gap:12px;text-align:center;padding:20px}
+  #rotate .ph{font-size:56px;animation:rot 1.6s ease-in-out infinite}
+  @keyframes rot{0%,100%{transform:rotate(0)}50%{transform:rotate(90deg)}}
+  @media (orientation:portrait){#rotate{display:flex}}
+</style>
+</head>
+<body>
+<div id="mstage">
+  <canvas id="c" width="480" height="270"></canvas>
+  <div id="hud" class="txt">
+    <div class="bar p1"><div class="name" id="n1"></div><div class="hp"><div class="ghost" id="g1"></div><div class="fill" id="f1"></div><div class="seg"></div></div><div class="pips" id="pips1"></div></div>
+    <div class="bar p2"><div class="name" id="n2"></div><div class="hp"><div class="ghost" id="g2"></div><div class="fill" id="f2"></div><div class="seg"></div></div><div class="pips" id="pips2"></div></div>
+    <div id="timer">60</div><div id="round"></div>
+    <div id="skills">
+      <div class="sk" id="sk1"><img src="assets/icons/star.png"><div class="cd"></div><div class="cdt"></div></div>
+      <div class="sk" id="sk2"><img src="assets/icons/dash.png"><div class="cd"></div><div class="cdt"></div></div>
+      <div class="sk" id="sk3"><img src="assets/icons/nova.png"><div class="cd"></div><div class="cdt"></div></div>
+    </div>
+    <div id="hint"></div>
+    <div id="banner"></div>
+    <div id="floaters"></div>
+    <div id="flash"></div>
+  </div>
+  <div id="touch">
+    <div id="joy"><div id="knob"></div></div>
+    <div id="btns">
+      <div class="tbtn" id="bJ"><img class="ticon" src="assets/icons/star.png"><small>星光弹</small><div class="cdover"></div></div>
+      <div class="tbtn" id="bK"><img class="ticon" src="assets/icons/dash.png"><small>冲刺</small><div class="cdover"></div></div>
+      <div class="tbtn" id="bL"><img class="ticon" src="assets/icons/nova.png"><small>新星</small><div class="cdover"></div></div>
+      <div class="tbtn" id="bJump"><img class="ticon" src="assets/icons/jump.png"><small>跳跃</small><div class="cdover"></div></div>
+    </div>
+    <div id="bPause">II</div>
+  </div>
+  <div id="title" class="screen txt">
+    <div class="title">STARLIGHT BRAWL</div>
+    <div class="sub2">星彩沙盘格斗 · 手机版 · 三局两胜</div>
+    <div class="vs">
+      <div class="card"><canvas id="cv1" width="48" height="48"></canvas><div style="color:#59c8ff">LUNA 月见</div><div style="font-size:.85em">星光猫耳少年(你)</div></div>
+      <div style="font-size:26px;color:#ffe45a">VS</div>
+      <div class="card"><canvas id="cv2" width="48" height="48"></canvas><div style="color:#ff8a4a">EMBER 炎狐</div><div style="font-size:.85em">烈焰狐耳少女(电脑)</div></div>
+    </div>
+    <span id="diffTxt" style="display:none"></span><div id="diffRow">
+      <div class="dchip" data-d="easy">简单</div>
+      <div class="dchip sel" data-d="normal">普通</div>
+      <div class="dchip" data-d="hard">困难</div>
+    </div>
+    <div id="startBtn">▶ 开始战斗</div>
+    <div class="menu">左摇杆移动 · 右侧按键放技能<br>跳起可躲星坠新星的冲击环</div>
+  </div>
+  <div id="pause" class="screen txt hide"><div class="title" style="font-size:34px">PAUSE</div><div class="blink">点右上 II 继续</div></div>
+  <div id="result" class="screen txt hide"><div class="title" id="resT" style="font-size:40px"></div><div class="sub2" id="resS"></div><div id="startBtn2" class="blink" style="padding:10px 34px;background:#2b6fd6;border:3px solid #000;box-shadow:0 0 0 3px #fff;border-radius:12px">再来一局</div><div id="backBtn">返回标题</div></div>
+  <div id="rotate"><div class="ph">📱</div><div>请把手机横过来游玩<br><small style="opacity:.7">建议横屏全屏体验最佳</small></div></div>
+</div>
+<script src="dist/game.js"></script>
+<script>
+// 合成键盘事件，复用桌面版输入系统
+function key(code, type) { window.dispatchEvent(new KeyboardEvent(type, { code })); }
+function tapKey(code) { key(code, 'keydown'); setTimeout(() => key(code, 'keyup'), 60); }
+// 难度选择 + 开始
+const diffMap = { easy: 'Digit1', normal: 'Digit2', hard: 'Digit3' };
+document.querySelectorAll('.dchip').forEach((c) => {
+  c.addEventListener('pointerdown', (e) => {
+    e.preventDefault();
+    document.querySelectorAll('.dchip').forEach((x) => x.classList.remove('sel'));
+    c.classList.add('sel'); tapKey(diffMap[c.dataset.d]);
+  });
+});
+document.getElementById('startBtn').addEventListener('pointerdown', (e) => { e.preventDefault(); tapKey('Enter'); });
+document.getElementById('startBtn2').addEventListener('pointerdown', (e) => { e.preventDefault(); tapKey('Enter'); });
+document.getElementById('backBtn').addEventListener('pointerdown', (e) => { e.preventDefault(); tapKey('Escape'); });
+document.getElementById('bPause').addEventListener('pointerdown', (e) => { e.preventDefault(); tapKey('KeyP'); });
+// 技能 / 跳跃键
+[['bJ', 'KeyJ'], ['bK', 'KeyK'], ['bL', 'KeyL'], ['bJump', 'Space']].forEach(([id, code]) => {
+  const el = document.getElementById(id);
+  el.addEventListener('pointerdown', (e) => { e.preventDefault(); el.classList.add('on'); key(code, 'keydown'); });
+  const up = (e) => { e.preventDefault(); el.classList.remove('on'); key(code, 'keyup'); };
+  el.addEventListener('pointerup', up); el.addEventListener('pointercancel', up); el.addEventListener('pointerleave', up);
+});
+// 虚拟摇杆 → WASD 八方向
+const joy = document.getElementById('joy'), knob = document.getElementById('knob');
+let joyId = null, cur = new Set();
+const keyOf = { w: 'KeyW', a: 'KeyA', s: 'KeyS', d: 'KeyD' };
+function setDir(set) {
+  for (const k of ['w', 'a', 's', 'd']) {
+    if (set.has(k) && !cur.has(k)) key(keyOf[k], 'keydown');
+    if (!set.has(k) && cur.has(k)) key(keyOf[k], 'keyup');
+  }
+  cur = set;
+}
+function joyMove(e) {
+  const r = joy.getBoundingClientRect(), cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+  let dx = e.clientX - cx, dy = e.clientY - cy;
+  const m = Math.hypot(dx, dy), max = 52;
+  if (m > max) { dx = (dx / m) * max; dy = (dy / m) * max; }
+  knob.style.transform = `translate(${dx}px,${dy}px)`;
+  const s = new Set();
+  if (m > 14) {
+    if (dy < -10) s.add('w'); if (dy > 10) s.add('s');
+    if (dx < -10) s.add('a'); if (dx > 10) s.add('d');
+  }
+  setDir(s);
+}
+joy.addEventListener('pointerdown', (e) => { e.preventDefault(); joyId = e.pointerId; joy.setPointerCapture(e.pointerId); joyMove(e); });
+joy.addEventListener('pointermove', (e) => { if (e.pointerId === joyId) joyMove(e); });
+const joyEnd = (e) => { if (e.pointerId === joyId) { joyId = null; knob.style.transform = ''; setDir(new Set()); } };
+joy.addEventListener('pointerup', joyEnd); joy.addEventListener('pointercancel', joyEnd);
+// 触控按钮冷却扫层（读游戏状态）
+setInterval(() => {
+  const g = window.__game; if (!g) return;
+  const menu = !document.getElementById('title').classList.contains('hide') || !document.getElementById('result').classList.contains('hide');
+  document.getElementById('touch').style.visibility = menu ? 'hidden' : 'visible';
+  const cd = g.player.cd;
+  [['bJ', 1, 0.55], ['bK', 2, 3.2], ['bL', 3, 8.5]].forEach(([id, k, mx]) => {
+    const el = document.getElementById(id).querySelector('.cdover');
+    if (el) el.style.height = Math.min(100, (cd[k] / mx) * 100) + '%';
+  });
+}, 100);
+document.addEventListener('gesturestart', (e) => e.preventDefault());
+document.addEventListener('dblclick', (e) => e.preventDefault());
+</script>
+</body>
+</html>
