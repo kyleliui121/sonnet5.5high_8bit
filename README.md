@@ -21,3 +21,14 @@
 ## 调试
 `node tools/shot.mjs out.png 1500 "Enter,wait:800,KeyJ"` 无头 Edge 截图；
 `node tools/dbg.mjs out.png "__game.start(); __game.advance(3,{a1:true})"` 确定性推进游戏后截图。
+## 游戏截图
+
+### 标题界面
+![标题界面](shots/title.png)
+
+### 战斗画面
+![战斗画面](shots/a1.png)
+
+![战斗画面](shots/b1.png)
+
+![战斗画面](shots/c1.png)
